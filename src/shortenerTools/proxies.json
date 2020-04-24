@@ -14,7 +14,7 @@
         "responseOverrides": {
           "response.statusCode": "301",
           "response.statusReason": "Moved Permanently",
-          "response.headers.location": "https://github.com/FBoucher/AzUrlShortener"
+          "response.headers.location": "https://hi.office0815.de/"
         }
       }
     }
