@@ -11,7 +11,7 @@
         "GitHubBranch": {
             "value": "feature/deploy-it-all"
         },
-        "defaultRedirectUrl": {
+        "defaultUrlRedirect": {
             "value": "https://azure.com"
         },
         "frontend": {

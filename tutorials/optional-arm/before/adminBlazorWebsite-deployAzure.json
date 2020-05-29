@@ -18,19 +18,19 @@
         "AdminPassword": {
            "type": "securestring",
            "metadata": {
-                "description": "Strong Password use to create the Administrator account. It MOST have: an uppercase character ,a lowercase character, a digit, a non-alphanumeric character, must be at least six (6) characters long."
+                "description": "Strong Password use to create the Administrator account"
             }
         },
-        "AzureFunctionUrl": {
+        "AzureFunctionUrlListUrl": {
            "type": "string",
            "metadata": {
-                "description": "URL of the Azure Function (ex: https://....azurewebsites.net)"
+                "description": "URL of the Azure Function UrlList"
             }
         },
-        "SecurityCode": {
-            "type": "string",
-            "metadata": {
-                "description": "Security token for the Azure Function."
+        "AzureFunctionUrlShortenerUrl": {
+           "type": "string",
+           "metadata": {
+                "description": "URL of the Azure Function UrlShortener"
             }
         },
         "GitHubURL": {
@@ -87,12 +87,12 @@
                 "siteConfig": {
                     "appSettings": [
                         {
-                            "name": "azFunctionUrl",
-                            "value": "[parameters('AzureFunctionUrl')]"
+                            "name": "AzureFunctionUrlListUrl",
+                            "value": "[parameters('AzureFunctionUrlListUrl')]"
                         },
                         {
-                            "name": "code",
-                            "value": "[parameters('SecurityCode')]"
+                            "name": "AzureFunctionUrlShortenerUrl",
+                            "value": "[parameters('AzureFunctionUrlShortenerUrl')]"
                         },
                         {
                             "name": "PROJECT",

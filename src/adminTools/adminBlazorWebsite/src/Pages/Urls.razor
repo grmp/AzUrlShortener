@@ -1,7 +1,9 @@
 @page "/Urls"
 @using adminBlazorWebsite.Data
 @inject UrlShortenerService UrlService
+@inject IJSRuntime JSRuntime;
 @attribute [Authorize(Roles = "admin")]
+
 
 @if (UrlList == null)
 {
@@ -9,21 +11,35 @@
 }
 else
 {
+    <button class="btn btn-primary"
+            @onclick="CreateShortUrl">
+        Add New Url
+    </button>
     <table class="table">
         <thead>
             <tr>
-                <th>RowKey</th>
+                <th></th>
+                <th>Vanity</th>
+                <th>Title</th>
                 <th>Url</th>
                 <th>Clicks</th>
+                <th></th>
             </tr>
         </thead>
         <tbody>
             @foreach (var url in UrlList.UrlList)
             {
                 <tr>
-                    <td>@url.RowKey</td>
-                    <td>@url.Url</td>
+                    <td><button type="button" class="btn btn-outline-primary btn-sm" @onclick="@(() => CopyToClipboardAsync(url.ShortUrl))">Copy</button></td>
+                    <td><a href="@url.ShortUrl" target="blank">@url.RowKey</a></td>
+                    <td>
+                        <span>@url.Title</span>
+                    </td>
+                    <td>
+                        <span title="@url.Url">@url.GetDisplayableUrl()</span>
+                    </td>
                     <td>@url.Clicks</td>
+                    <td><button type="button" class="btn btn-outline-primary btn-sm" @onclick="@(() => EditShortUrl(url))">Edit</button></td>
                 </tr>
             }
         </tbody>
@@ -37,7 +53,7 @@ else
 </p>
 }
 
-@if(ShowPopup)
+@if(ShowCreatePopup)
 {
     <div class="modal" tabindex="-1" style="display:block" role="dialog">
         <div class="modal-dialog">
@@ -51,9 +67,17 @@ else
                     </button>
                 </div>
                 <div class="modal-body">
+                    <label>Title</label>
+                    <input class="form-control" type="text"
+                                       placeholder="Title or description for this URL"
+                                       @bind="shortUrlRequest.Title" />
+                    <br />
+                    <label>The Url to redirect</label>
                     <input class="form-control" type="text"
                                        placeholder="The Url to redirect"
                                        @bind="shortUrlRequest.Url" />
+                    <br />
+                    <label>Vanity</label>
                     <input class="form-control" type="text"
                                        placeholder="Vanity or the 'End' part of the Url"
                                        @bind="shortUrlRequest.Vanity" />
@@ -69,20 +93,66 @@ else
 }
 
 
+@if(ShowEditPopup)
+{
+    <div class="modal" tabindex="-1" style="display:block" role="dialog">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Edit Short Url</h3>
+                    <!-- Button to close the popup -->
+                    <button type="button" class="close"
+                            @onclick="ClosePopup">
+                        <span aria-hidden="true">X</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <label>Title</label>
+                    <input class="form-control" type="text"
+                                       placeholder="Title or description for this URL"
+                                       @bind="editedUrl.Title" />
+                    <br />
+                    <label>The Url to redirect</label>
+                    <input class="form-control" type="text"
+                                       placeholder="https://..."
+                                       @bind="editedUrl.Url" />
+                    <br />
+                    <button class="btn btn-primary"
+                            @onclick="SaveUpdatedShortUrl">
+                        Save
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+
+
 @code
 {
-    bool ShowPopup = false;
+    bool ShowCreatePopup = false;
+    bool ShowEditPopup = false;
     ShortUrlRequest shortUrlRequest = new ShortUrlRequest();
+    ShortUrlEntity editedUrl;
     ShortUrlList UrlList;
 
     void ClosePopup()
     {
-        ShowPopup = false;
+        ShowCreatePopup = false;
+        ShowEditPopup = false;
     }
     private async Task SaveShortUrl()
     {
-        ShowPopup = false;
+        ShowCreatePopup = false;
         await UrlService.CreateShortUrl(shortUrlRequest);
+        UrlList = await UrlService.GetUrlList();
+    }
+    
+    private async Task SaveUpdatedShortUrl()
+    {
+        ShowEditPopup = false;
+        await UrlService.UpdateShortUrl(editedUrl);
         UrlList = await UrlService.GetUrlList();
     }
     protected override async Task OnParametersSetAsync()
@@ -94,7 +164,22 @@ else
     void CreateShortUrl()
     {
         shortUrlRequest = new ShortUrlRequest();
-        ShowPopup = true;
+        ShowCreatePopup = true;
+    }
+
+
+    [Authorize(Roles = "admin")]
+    void EditShortUrl(ShortUrlEntity urlEntity)
+    {
+        editedUrl = urlEntity;
+        ShowEditPopup = true;
+    }
+
+
+    [Inject] public IJSRuntime JsRuntime { get; set; }
+    public async Task CopyToClipboardAsync(string url)
+    {
+        await JSRuntime.InvokeVoidAsync("clipboardCopy.copyText", url);
     }
 
 }

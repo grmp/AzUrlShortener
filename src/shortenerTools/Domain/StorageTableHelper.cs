@@ -73,7 +73,7 @@ namespace Cloud5mins.domain
             var lstShortUrl = new List<ClickStatsEntity>();
             do
             {
-                // Retreiving all entities that are NOT the NextId entity 
+                // Retrieving all entities that are NOT the NextId entity 
                 // (it's the only one in the partion "KEY")
                 TableQuery<ClickStatsEntity> rangeQuery = new TableQuery<ClickStatsEntity>().Where(
                     filter: TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, vanity));
@@ -85,13 +85,24 @@ namespace Cloud5mins.domain
             return lstShortUrl;
         }
 
-        public  async Task<bool> IfShortUrlEntityExist(ShortUrlEntity row)
+
+        public async Task<bool> IfShortUrlEntityExist(ShortUrlEntity row)
         {
              ShortUrlEntity eShortUrl = await GetShortUrlEntity(row);
              return (eShortUrl != null);
         }
 
-        public  async Task<ShortUrlEntity> SaveShortUrlEntity(ShortUrlEntity newShortUrl)
+         public async Task<ShortUrlEntity> UpdateShortUrlEntity(ShortUrlEntity urlEntity)
+         {
+            ShortUrlEntity originalUrl = await GetShortUrlEntity(urlEntity);
+            originalUrl.Url = urlEntity.Url;
+            originalUrl.Title = urlEntity.Title;
+
+            return await SaveShortUrlEntity(originalUrl);
+         }
+
+
+        public async Task<ShortUrlEntity> SaveShortUrlEntity(ShortUrlEntity newShortUrl)
         {
              TableOperation insOperation = TableOperation.InsertOrMerge(newShortUrl);
              TableResult result = await GetUrlsTable().ExecuteAsync(insOperation);

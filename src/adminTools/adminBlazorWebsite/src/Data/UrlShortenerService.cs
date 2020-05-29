@@ -20,15 +20,30 @@ namespace adminBlazorWebsite.Data
         {
             var config = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddJsonFile("appsettings.Development.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
             return config;
         }
 
+        private static string GetFunctionUrl(string functionName){
+            StringBuilder FuncUrl = new StringBuilder(GetConfiguration()["azFunctionUrl"]);
+            FuncUrl.Append("/api/");
+            FuncUrl.Append(functionName);
+
+            string code = GetConfiguration()["code"];
+            if(!string.IsNullOrWhiteSpace(code))
+            {
+                FuncUrl.Append("?code=");
+                FuncUrl.Append(code);
+            }
+            
+            return FuncUrl.ToString();
+        }
+
         public async Task<ShortUrlList> GetUrlList()
         {
-            var url = GetConfiguration()["AzureFunctionUrlListUrl"];
+            var url = GetFunctionUrl("UrlList");
 
             CancellationToken cancellationToken;
 
@@ -49,7 +64,7 @@ namespace adminBlazorWebsite.Data
 
         public async Task<ShortUrlList> CreateShortUrl(ShortUrlRequest shortUrlRequest)
         {
-            var url = GetConfiguration()["AzureFunctionUrlShortenerUrl"];
+            var url = GetFunctionUrl("UrlShortener");
 
             CancellationToken cancellationToken;
 
@@ -66,6 +81,30 @@ namespace adminBlazorWebsite.Data
 
                     var resultList = response.Content.ReadAsStringAsync().Result;
                     return JsonConvert.DeserializeObject<ShortUrlList>(resultList);
+                }
+            }
+        }
+
+
+        public async Task<ShortUrlEntity> UpdateShortUrl(ShortUrlEntity editedUrl)
+        {
+            var url = GetFunctionUrl("UrlUpdate");
+
+            CancellationToken cancellationToken;
+
+            using (var client = new HttpClient())
+            using (var request = new HttpRequestMessage(HttpMethod.Post, url))
+            using (var httpContent = CreateHttpContent(editedUrl))
+            {
+                request.Content = httpContent;
+
+                using (var response = await client
+                    .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken)
+                    .ConfigureAwait(false))
+                {
+
+                    var resultList = response.Content.ReadAsStringAsync().Result;
+                    return JsonConvert.DeserializeObject<ShortUrlEntity>(resultList);
                 }
             }
         }

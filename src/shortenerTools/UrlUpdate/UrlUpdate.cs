@@ -1,6 +1,19 @@
 /*
 ```c#
 Input:
+    {
+         // [Required]
+        "PartitionKey": "d",
+
+         // [Required]
+        "RowKey": "doc",
+
+        // [Optional] New Title for this URL, or text description of your choice.
+        "title": "Quickstart: Create your first function in Azure using Visual Studio"
+
+        // [Optional] New long Url where the the user will be redirect
+        "Url": "https://SOME_URL"
+    }
 
 
 Output:
@@ -27,17 +40,29 @@ using Microsoft.Extensions.Configuration;
 
 namespace Cloud5mins.Function
 {
-    public static class UrlList
+    public static class UrlUpdate
     {
-        [FunctionName("UrlList")]
+        [FunctionName("UrlUpdate")]
         public static async Task<HttpResponseMessage> Run(
-        [HttpTrigger(AuthorizationLevel.Function, "get", Route = null)]HttpRequestMessage req, 
+        [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)]HttpRequestMessage req, 
         ILogger log, 
         ExecutionContext context)
         {
             log.LogInformation($"C# HTTP trigger function processed this request: {req}");
 
-            var result = new ListResponse();
+            // Validation of the inputs
+            if (req == null)
+            {
+                return req.CreateResponse(HttpStatusCode.NotFound);
+            }
+
+            ShortUrlEntity input = await req.Content.ReadAsAsync<ShortUrlEntity>();
+            if (input == null)
+            {
+                return req.CreateResponse(HttpStatusCode.NotFound);
+            }
+
+            ShortUrlEntity result;
             var config = new ConfigurationBuilder()
                 .SetBasePath(context.FunctionAppDirectory)
                 .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
@@ -48,11 +73,10 @@ namespace Cloud5mins.Function
 
             try
             {
-               result.UrlList = await stgHelper.GetAllShortUrlEntities();
-               var host = req.RequestUri.GetLeftPart(UriPartial.Authority); 
-               foreach(ShortUrlEntity url in result.UrlList){
-                   url.ShortUrl = Utility.GetShortUrl(host, url.RowKey);
-               }
+                result = await stgHelper.UpdateShortUrlEntity(input);
+                var host = req.RequestUri.GetLeftPart(UriPartial.Authority); 
+                result.ShortUrl = Utility.GetShortUrl(host, result.RowKey);
+
             }
             catch (Exception ex)
             {

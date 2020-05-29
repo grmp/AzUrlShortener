@@ -9,18 +9,7 @@
                 "description": "Name use as base-template to named the resources to be deployed in Azure."
             }
         },
-        "frontend": {
-           "type": "string",
-           "allowedValues": [
-               "none",
-               "adminBlazorWebsite"
-           ],
-           "defaultValue": "adminBlazorWebsite",
-           "metadata": {
-                "description": "Select the frontend that will be deploy. Select 'none', if you don't want any. Frontend available: adminBlazorWebsite, none. "
-            }
-        },
-        "defaultRedirectUrl": {
+        "defaultUrlRedirect": {
             "defaultValue": "https://azure.com",
             "type": "string",
             "metadata": {
@@ -50,23 +39,9 @@
         },
         "OwnerName":{
             "type":"string",
-            "defaultValue": "",
+            "defaultValue":"",
             "metadata": {
                 "description": "Owner of this deployment, person to contact for question."
-            }
-        },
-        "frontend-AdminEMail": {
-           "type": "string",
-           "defaultValue": "",
-           "metadata": {
-                "description": "(Required only if frontend = adminBlazorWebsite) The EMail use to connect into the admin Blazor Website."
-            }
-        },
-        "frontend-AdminPassword": {
-           "type": "securestring",
-           "defaultValue": "",
-           "metadata": {
-                "description": "(Required only if frontend = adminBlazorWebsite) Password use to connect into the admin Blazor Website. It MOST have: an uppercase character,a lowercase character, a digit, a non-alphanumeric character, must be at least six (6) characters long."
             }
         }
     },
@@ -75,16 +50,9 @@
         "funcAppName": "[toLower(concat(parameters('baseName'), variables('suffix')))]",
         "funcStorageAccountName": "[tolower(concat(substring(parameters('baseName'), 0, min(length(parameters('baseName')),16)), variables('suffix'), 'stg'))]",
         "funcHhostingPlanName": "[concat(substring(parameters('baseName'), 0, min(length(parameters('baseName')),14)), variables('suffix'), 'plan')]",
-        "insightsAppName":"[concat(substring(parameters('baseName'), 0, min(length(parameters('baseName')),14)), variables('suffix'), '-meta')]",
+        "insghtsAppName":"[concat(substring(parameters('baseName'), 0, min(length(parameters('baseName')),14)), variables('suffix'), '-meta')]",
         "functionProjectFolder": "src/shortenerTools",
-        "UrlsStorageAccountName": "[concat('urldata', variables('suffix'), 'stg')]",
-        "frontendInfo": {
-            "adminBlazorWebsite": { 
-                "armTemplateUrl": "[concat('https://raw.githubusercontent.com/FBoucher/AzUrlShortener/', parameters('GitHubBranch'), '/src/adminTools/adminBlazorWebsite/deployment/adminBlazorWebsite-deployAzure.json')]"
-            }
-        }
-            
-        
+        "UrlsStorageAccountName": "[concat('urldata', variables('suffix'), 'stg')]"
     },
     "resources": [
         {
@@ -98,10 +66,9 @@
                 "ExpireOn": "[parameters('ExpireOn')]"
             },
             "dependsOn": [
-                "[concat('microsoft.insights/components/', variables('insightsAppName'))]",
+                "[concat('microsoft.insights/components/', variables('insghtsAppName'))]",
                 "[concat('Microsoft.Web/serverfarms/', variables('funcHhostingPlanName'))]",
-                "[concat('Microsoft.Storage/storageAccounts/',variables('funcStorageAccountName'))]",
-                "[concat('Microsoft.Storage/storageAccounts/',variables('UrlsStorageAccountName'))]"
+                "[concat('Microsoft.Storage/storageAccounts/',variables('funcStorageAccountName'))]"
             ],
             "properties": {
                 "name": "[variables('funcAppName')]",
@@ -117,11 +84,11 @@
                         },
                         {
                             "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
-                            "value": "[reference(concat('microsoft.insights/components/', variables('insightsAppName')), '2015-05-01').InstrumentationKey]"
+                            "value": "[reference(concat('microsoft.insights/components/', variables('insghtsAppName')), '2015-05-01').InstrumentationKey]"
                         },
                         {
                             "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
-                            "value": "[reference(concat('microsoft.insights/components/', variables('insightsAppName')), '2015-05-01').ConnectionString]"
+                            "value": "[reference(concat('microsoft.insights/components/', variables('insghtsAppName')), '2015-05-01').ConnectionString]"
                         },
                         {
                             "name": "AzureWebJobsStorage",
@@ -148,8 +115,8 @@
                             "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('UrlsStorageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts',variables('UrlsStorageAccountName')), '2019-06-01').keys[0].value,';EndpointSuffix=','core.windows.net')]"
                         },
                         {
-                            "name": "defaultRedirectUrl",
-                            "value": "[parameters('defaultRedirectUrl')]"
+                            "name": "defaultUrlRedirect",
+                            "value": "[parameters('defaultUrlRedirect')]"
                         }
                     ]
                 },
@@ -166,7 +133,7 @@
                       "[resourceId('Microsoft.Web/sites/', variables('funcAppName'))]"
                     ],
                     "properties": {
-                        "repoUrl": "[parameters('GitHubURL')]",
+                        "RepoUrl": "[parameters('GitHubURL')]",
                         "branch": "[parameters('GitHubBranch')]",
                         "publishRunbook": true,
                         "IsManualIntegration": true
@@ -179,7 +146,6 @@
             "name": "[variables('funcHhostingPlanName')]",
             "type": "Microsoft.Web/serverfarms",
             "location": "[resourceGroup().location]",
-            "kind": "",
             "tags": {
                 "Owner": "[parameters('OwnerName')]",
                 "ExpireOn": "[parameters('ExpireOn')]"
@@ -195,18 +161,16 @@
         },
         {
             "apiVersion": "2015-05-01",
-            "name": "[variables('insightsAppName')]",
+            "name": "[variables('insghtsAppName')]",
             "type": "microsoft.insights/components",
             "location": "[resourceGroup().location]",
             "tags": {
                 "Owner": "[parameters('OwnerName')]",
                 "ExpireOn": "[parameters('ExpireOn')]"
             },
-            "kind": "",
             "properties": {
-                "Application_Type": "web",
                 "ApplicationId": "[variables('funcAppName')]",
-                "Request_Source": "rest"
+                "Request_Source": "IbizaWebAppExtensionCreate"
             }
         },
         {
@@ -215,8 +179,7 @@
             "name": "[variables('funcStorageAccountName')]",
             "location": "[resourceGroup().location]",
             "sku": {
-                "name": "Standard_LRS",
-                "tier": "Standard"
+                "name": "Standard_LRS"
             },
             "properties": {
                 "supportsHttpsTrafficOnly": true
@@ -225,65 +188,16 @@
         {
             "name": "[variables('UrlsStorageAccountName')]",
             "type": "Microsoft.Storage/storageAccounts",
-            "apiVersion": "2019-06-01",
+            "apiVersion": "2015-06-15",
             "location": "[resourceGroup().location]",
             "tags": {
                 "displayName": "[variables('UrlsStorageAccountName')]",
                 "Owner": "[parameters('OwnerName')]",
                 "ExpireOn": "[parameters('ExpireOn')]"
             },
-            "sku": {
-                "name": "Standard_LRS",
-                "tier": "Standard"
-            }
-        },
-        {
-            "name": "FrontendDeployment",
-            "type": "Microsoft.Resources/deployments",
-            "condition": "[not(equals(parameters('frontend'), 'none'))]",
-            "dependsOn": [
-                "[resourceId('Microsoft.Web/sites/', variables('funcAppName'))]",
-                "[resourceId('Microsoft.Web/sites/sourcecontrols', variables('funcAppName'), 'web')]"
-            ],
-            "resourceGroup": "[resourceGroup().name]",
-            "apiVersion": "2019-10-01",
             "properties": {
-                "mode": "Incremental",
-                "templateLink": {
-                    "uri": "[variables('frontendInfo')[parameters('frontend')].armTemplateUrl]"
-                },
-                "parameters": {
-                    "basename": {
-                        "value" : "[concat('adm', parameters('baseName'))]"
-                    },
-                    "AdminEMail": {
-                        "value" : "[parameters('frontend-AdminEMail')]"
-                    },
-                    "AdminPassword": {
-                        "value" : "[parameters('frontend-AdminPassword')]"
-                    },
-                    "AzureFunctionUrl": {
-                        "value" : "[concat('https://', reference(resourceId('Microsoft.Web/sites/', variables('funcAppName')), '2018-02-01').hostNames[0])]"
-                    },
-                    "SecurityCode": {
-                        "value" : "[listkeys(concat(resourceId('Microsoft.Web/sites/', variables('funcAppName')), '/host/default/'),'2016-08-01').functionKeys.default]"
-                    },
-                    "GitHubURL": {
-                        "value" : "[parameters('GitHubURL')]"
-                    },
-                    "GitHubBranch": {
-                        "value" : "[parameters('GitHubBranch')]"
-                    },
-                    "ExpireOn": {
-                        "value" : "[parameters('ExpireOn')]"
-                    },
-                    "OwnerName": {
-                        "value" : "[parameters('OwnerName')]"
-                    }
-
-                }
+                "accountType": "Standard_LRS"
             }
         }
-    ],
-    "outputs":{}
+    ]
 }
